@@ -1,0 +1,6 @@
+*.pyc
+*.swp
+*nohup.out
+tags
+luceneIndex
+.DS_Store
