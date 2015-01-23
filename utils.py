@@ -11,6 +11,8 @@ import StringIO
 import gzip
 import json
 import logging
+import functools
+import traceback
 
 import MySQLdb
 
@@ -416,3 +418,81 @@ class NotImplemetedError(Exception):
     def __str__(self):
         return "%s: Instance method %s not implemented!"\
             % ("NotImplemetedError", self.method)
+
+
+def catch_error(func):
+    """用以捕获方法异常的装饰器
+    """
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        """包装
+        """
+        try:
+            return func(self, *args, **kwargs)
+        except Exception as e:
+            logging.error(str(e))
+            logging.error(traceback.format_exc())
+    return wrapper
+
+
+def url_concat(url, args):
+    """在指定URL新增参数
+
+    @args, dict, 参数字典
+    """
+    if not args:
+        return url
+    if url[-1] not in ('?', '&'):
+        url += '&' if ('?' in url) else '?'
+    return url + urllib.urlencode(args)
+
+
+def force_utf8(data):
+    """数据转换为utf8
+
+    @data: 待转换的数据
+    @return: utf8编码
+    """
+    if isinstance(data, unicode):
+        return data.encode('utf-8')
+    elif isinstance(data, list):
+        for idx, i in enumerate(data):
+            data[idx] = force_utf8(i)
+    elif isinstance(data, dict):
+        for i in data:
+            data[i] = force_utf8(data[i])
+    return data
+
+
+def format_timestamp(timestamp, fmt="%Y-%m-%d %H:%M:%S"):
+    """格式化时间戳
+
+    @timestamp, float, time.time()时间戳
+    @fmt, str, 格式模版
+    @return 年月日时分秒
+    """
+    return time.strftime(fmt, time.localtime(timestamp))
+
+
+class Timer(object):
+    """定时器，定时执行指定的函数
+
+    """
+
+    def __init__(self, start, interval):
+        """
+        @start, int, 延迟执行的秒数
+        @interval, int, 每次执行的间隔秒数
+        """
+        self.start = start
+        self.interval = interval
+
+    def run(self, func, *args, **kwargs):
+        """运行定时器
+
+        @func, callable, 要执行的函数
+        """
+        time.sleep(self.start)
+        while True:
+            func(*args, **kwargs)
+            time.sleep(self.interval)
